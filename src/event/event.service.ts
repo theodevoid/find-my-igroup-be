@@ -1,10 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { startOfDay } from 'date-fns';
 import { PrismaService } from 'src/lib/prisma.service';
+import { SupabaseService } from 'src/lib/supabase.service';
 
 @Injectable()
 export class EventService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly supabaseService: SupabaseService,
+  ) {}
 
   public async getEvents(userId: string) {
     const user = await this.prismaService.user.findFirst({
@@ -13,10 +17,21 @@ export class EventService {
       },
     });
 
+    const joinedSigs = await this.prismaService.member.findMany({
+      where: {
+        userId: user.id,
+      },
+    });
+
+    const joinedSigIds = joinedSigs.map((sig) => sig.interestGroupId);
+
     const events = await this.prismaService.event.findMany({
       where: {
         schedule: {
           gt: startOfDay(new Date()),
+        },
+        interestGroupId: {
+          in: joinedSigIds,
         },
       },
       include: {
@@ -75,6 +90,7 @@ export class EventService {
       organization: event.organization.name,
       isJoined: Boolean(joinedUser),
       paymentProofImageUrl: joinedUser ? joinedUser.paymentProofImageUrl : null,
+      joinedCount: event.EventParticipant.length,
     };
   }
 
@@ -146,5 +162,52 @@ export class EventService {
       isJoined: true,
       organization: event.organization.name,
     }));
+  }
+
+  public async uploadPaymentAndJoinEvent(
+    userId: string,
+    eventId: number,
+    paymentProof: Express.Multer.File,
+  ) {
+    const user = await this.prismaService.user.findFirst({
+      where: {
+        userId,
+      },
+    });
+
+    const paymentProofImageUrl =
+      await this.supabaseService.uploadToStorage(paymentProof);
+
+    await this.prismaService.eventParticipant.create({
+      data: {
+        userId: user.id,
+        eventId,
+        paymentProofImageUrl: paymentProofImageUrl.data.publicUrl,
+      },
+    });
+  }
+
+  public async getEventJoinedUsers(eventId: number) {
+    const participants = await this.prismaService.eventParticipant.findMany({
+      where: {
+        eventId,
+      },
+    });
+
+    const participantIds = participants.map(
+      (participant) => participant.userId,
+    );
+
+    const joinedUsers = await this.prismaService.user.findMany({
+      where: {
+        id: {
+          in: participantIds,
+        },
+      },
+    });
+
+    console.log(joinedUsers);
+
+    return joinedUsers;
   }
 }

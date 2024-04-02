@@ -6,6 +6,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { AuthService } from './auth/auth.service';
 import { AuthModule } from './auth/auth.module';
 import { EventModule } from './event/event.module';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { EventModule } from './event/event.module';
     }),
     AuthModule,
     EventModule,
+    UserModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService, AuthService],
