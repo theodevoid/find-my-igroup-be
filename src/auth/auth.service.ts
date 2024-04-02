@@ -39,11 +39,11 @@ export class AuthService {
       },
     });
 
-    return await this.login({ email, password });
+    // return await this.login({ email, password,  });
   }
 
   public async login(loginUserDTO: LoginUserDTO) {
-    const { email, password } = loginUserDTO;
+    const { email, password, deviceToken } = loginUserDTO;
 
     const user = await this.prismaService.user.findFirst({
       where: {
@@ -60,6 +60,15 @@ export class AuthService {
     if (!passwordIsCorrect) {
       throw new UnprocessableEntityException('wrong credentials');
     }
+
+    await this.prismaService.user.update({
+      data: {
+        deviceToken,
+      },
+      where: {
+        id: user.id,
+      },
+    });
 
     const token = await this.jwtService.signAsync({
       userId: user.userId,

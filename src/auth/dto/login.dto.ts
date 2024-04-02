@@ -9,4 +9,7 @@ export class LoginUserDTO {
 
   @IsString()
   readonly password: string;
+
+  @IsString()
+  readonly deviceToken: string;
 }

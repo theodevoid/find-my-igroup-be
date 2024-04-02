@@ -20,6 +20,7 @@ model User {
   email          String          @unique
   name           String?
   password       String
+  deviceToken    String?
   interestGroups InterestGroup[]
 
   createdAt        DateTime           @default(now())
