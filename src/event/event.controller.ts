@@ -22,6 +22,12 @@ export class EventController {
     return await this.eventService.getEvents(userId);
   }
 
+  @Get('/joined')
+  @UseGuards(AuthGuard)
+  public async getJoinedEvents(@UserID() userId: string) {
+    return await this.eventService.getJoinedEvents(userId);
+  }
+
   @Get('/:eventId')
   @UseGuards(AuthGuard)
   public async getEventById(
@@ -51,20 +57,24 @@ export class EventController {
   @Post('/:eventId/payment')
   @UseGuards(AuthGuard)
   @UseInterceptors(FileInterceptor('payment_proof_image'))
-  public async uploadPaymentAndJoinEvent(
+  public async uploadPayment(
     @UserID() userId: string,
     @Param('eventId') eventId: number,
     @UploadedFile() paymentProofFile: Express.Multer.File,
   ) {
-    console.log({
-      userId,
-      eventId,
-      paymentProofFile,
-    });
-    return await this.eventService.uploadPaymentAndJoinEvent(
+    return await this.eventService.uploadPayment(
       userId,
       eventId,
       paymentProofFile,
     );
+  }
+
+  @Post('/:eventId/join')
+  @UseGuards(AuthGuard)
+  public async joinEvent(
+    @UserID() userId: string,
+    @Param('eventId') eventId: number,
+  ) {
+    return await this.eventService.joinEvent(userId, eventId);
   }
 }

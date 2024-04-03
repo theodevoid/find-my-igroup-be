@@ -17,8 +17,6 @@ export class AuthService {
   public async registerUser(registerUserDTO: RegisterUserDTO) {
     const { email, name, password } = registerUserDTO;
 
-    console.log(registerUserDTO);
-
     const userWithSameEmail = await this.prismaService.user.findFirst({
       where: {
         email,

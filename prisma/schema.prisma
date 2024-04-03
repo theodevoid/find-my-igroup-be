@@ -59,7 +59,7 @@ model Event {
   title                  String
   schedule               DateTime
   organization           InterestGroup      @relation(fields: [interestGroupId], references: [id])
-  price                  Int
+  totalPrice             Int
   location               String
   locationDetails        String
   locationMapLink        String

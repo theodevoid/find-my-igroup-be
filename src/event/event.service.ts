@@ -59,8 +59,6 @@ export class EventService {
       };
     });
 
-    // console.log(eventResponse);
-
     return eventResponse;
   }
 
@@ -121,8 +119,6 @@ export class EventService {
       },
     });
 
-    console.log(joinedUpcomingEvents);
-
     return joinedUpcomingEvents.map((event) => ({
       ...event,
       isJoined: true,
@@ -155,8 +151,6 @@ export class EventService {
       },
     });
 
-    console.log(joinedPastEvents);
-
     return joinedPastEvents.map((event) => ({
       ...event,
       isJoined: true,
@@ -164,7 +158,45 @@ export class EventService {
     }));
   }
 
-  public async uploadPaymentAndJoinEvent(
+  public async getJoinedEvents(userId: string) {
+    const user = await this.prismaService.user.findFirst({
+      where: {
+        userId,
+      },
+      include: {
+        EventParticipant: true,
+      },
+    });
+
+    const joinedEventIds = user.EventParticipant.map((event) => event.eventId);
+
+    const joinedUpcomingEvents = await this.prismaService.event.findMany({
+      where: {
+        id: {
+          in: joinedEventIds,
+        },
+      },
+      include: {
+        EventParticipant: true,
+        organization: true,
+      },
+      orderBy: {
+        schedule: 'desc',
+      },
+    });
+
+    return joinedUpcomingEvents.map((event) => ({
+      ...event,
+      isJoined: true,
+      organization: event.organization.name,
+      paymentProofImageUrl:
+        event.EventParticipant.find(
+          (participant) => participant.userId == user.id,
+        )?.paymentProofImageUrl || null,
+    }));
+  }
+
+  public async uploadPayment(
     userId: string,
     eventId: number,
     paymentProof: Express.Multer.File,
@@ -178,11 +210,39 @@ export class EventService {
     const paymentProofImageUrl =
       await this.supabaseService.uploadToStorage(paymentProof);
 
-    await this.prismaService.eventParticipant.create({
-      data: {
+    console.log('JOIN EVENT', paymentProofImageUrl);
+
+    const participant = await this.prismaService.eventParticipant.upsert({
+      create: {
         userId: user.id,
         eventId,
         paymentProofImageUrl: paymentProofImageUrl.data.publicUrl,
+      },
+      update: {
+        paymentProofImageUrl: paymentProofImageUrl.data.publicUrl,
+      },
+      where: {
+        eventId_userId: {
+          eventId,
+          userId: user.id,
+        },
+      },
+    });
+
+    console.log(participant);
+  }
+
+  public async joinEvent(userId: string, eventId: number) {
+    const user = await this.prismaService.user.findFirst({
+      where: {
+        userId,
+      },
+    });
+
+    await this.prismaService.eventParticipant.create({
+      data: {
+        eventId,
+        userId: user.id,
       },
     });
   }
@@ -205,8 +265,6 @@ export class EventService {
         },
       },
     });
-
-    console.log(joinedUsers);
 
     return joinedUsers;
   }

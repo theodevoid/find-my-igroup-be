@@ -30,8 +30,6 @@ export class UserService {
       },
     });
 
-    console.log(joinedSigs);
-
     return joinedSigs;
   }
 
