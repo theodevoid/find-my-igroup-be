@@ -140,7 +140,9 @@ export class EventService {
 
     const joinedPastEvents = await this.prismaService.event.findMany({
       where: {
-        schedule: startOfDay(new Date()),
+        schedule: {
+          lte: startOfDay(new Date()),
+        },
         id: {
           in: joinedEventIds,
         },
